@@ -1,0 +1,72 @@
+{
+  "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
+  "name": "io.github.A1-x-Tech/mcp-google-merchants",
+  "title": "Google Merchant Center MCP",
+  "description": "MCP server for Google Merchant Center (Merchant API v1): products, promotions, reports, issues.",
+  "websiteUrl": "https://github.com/A1-x-Tech/mcp-google-merchants#readme",
+  "repository": {
+    "url": "https://github.com/A1-x-Tech/mcp-google-merchants",
+    "source": "github"
+  },
+  "version": "0.1.0",
+  "packages": [
+    {
+      "registryType": "npm",
+      "registryBaseUrl": "https://registry.npmjs.org",
+      "identifier": "mcp-google-merchants",
+      "version": "0.1.0",
+      "transport": {
+        "type": "stdio"
+      },
+      "environmentVariables": [
+        {
+          "name": "GOOGLE_MERCHANTS_CLIENT_ID",
+          "description": "Google OAuth 2.0 client ID (refresh-token flow).",
+          "isRequired": false,
+          "isSecret": true
+        },
+        {
+          "name": "GOOGLE_MERCHANTS_CLIENT_SECRET",
+          "description": "Google OAuth 2.0 client secret (refresh-token flow).",
+          "isRequired": false,
+          "isSecret": true
+        },
+        {
+          "name": "GOOGLE_MERCHANTS_REFRESH_TOKEN",
+          "description": "OAuth refresh token with scope https://www.googleapis.com/auth/content.",
+          "isRequired": false,
+          "isSecret": true
+        },
+        {
+          "name": "GOOGLE_MERCHANTS_ACCESS_TOKEN",
+          "description": "Pre-minted OAuth access token (~1h lifetime) — alternative to the refresh trio.",
+          "isRequired": false,
+          "isSecret": true
+        },
+        {
+          "name": "GOOGLE_MERCHANTS_ACCOUNT_ID",
+          "description": "Default Merchant Center account ID; tools can override it per call.",
+          "isRequired": false
+        },
+        {
+          "name": "GOOGLE_MERCHANTS_API_BASE",
+          "description": "API root host override.",
+          "isRequired": false,
+          "default": "https://merchantapi.googleapis.com"
+        },
+        {
+          "name": "GOOGLE_MERCHANTS_TIMEOUT_MS",
+          "description": "Per-request timeout in milliseconds.",
+          "isRequired": false,
+          "default": "60000"
+        },
+        {
+          "name": "GOOGLE_MERCHANTS_MAX_RETRIES",
+          "description": "Retries on transient errors (429 always; 5xx/network for reads).",
+          "isRequired": false,
+          "default": "3"
+        }
+      ]
+    }
+  ]
+}
