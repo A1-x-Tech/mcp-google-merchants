@@ -1,0 +1,23 @@
+{
+  "name": "mcp-google-merchants",
+  "version": "0.0.1",
+  "description": "MCP server for Google Merchant Center (Merchant API) — products, data sources, promotions, price competitiveness and reports. For Claude, Cursor, Codex and other AI clients.",
+  "keywords": ["mcp", "model-context-protocol", "google", "merchant-center", "merchant-api", "google-shopping", "e-commerce", "claude", "cursor", "codex"],
+  "homepage": "https://github.com/A1-x-Tech/mcp-google-merchants#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/A1-x-Tech/mcp-google-merchants.git"
+  },
+  "license": "MIT",
+  "author": "gistrec <gistrec@gmail.com>",
+  "type": "module",
+  "bin": {
+    "mcp-google-merchants": "index.js"
+  },
+  "files": [
+    "index.js"
+  ],
+  "engines": {
+    "node": ">=18"
+  }
+}
