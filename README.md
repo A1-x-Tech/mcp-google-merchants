@@ -24,7 +24,7 @@ re-fetches — with destructive tools clearly annotated so MCP hosts can gate th
      -e GOOGLE_MERCHANTS_CLIENT_SECRET=your_client_secret \
      -e GOOGLE_MERCHANTS_REFRESH_TOKEN=your_refresh_token \
      -e GOOGLE_MERCHANTS_ACCOUNT_ID=your_merchant_id \
-     -- npx -y mcp-google-merchants
+     -- npx -y mcp-google-merchants@latest
    ```
 
 3. Ask the assistant: *"Which of my products are disapproved, and why?"*
@@ -124,7 +124,7 @@ claude mcp add google-merchants \
   -e GOOGLE_MERCHANTS_CLIENT_SECRET=your_client_secret \
   -e GOOGLE_MERCHANTS_REFRESH_TOKEN=your_refresh_token \
   -e GOOGLE_MERCHANTS_ACCOUNT_ID=your_merchant_id \
-  -- npx -y mcp-google-merchants
+  -- npx -y mcp-google-merchants@latest
 ```
 
 </details>
@@ -139,7 +139,7 @@ claude mcp add google-merchants \
   "mcpServers": {
     "google-merchants": {
       "command": "npx",
-      "args": ["-y", "mcp-google-merchants"],
+      "args": ["-y", "mcp-google-merchants@latest"],
       "env": {
         "GOOGLE_MERCHANTS_CLIENT_ID": "your_client_id",
         "GOOGLE_MERCHANTS_CLIENT_SECRET": "your_client_secret",
@@ -163,7 +163,7 @@ claude mcp add google-merchants \
   "mcpServers": {
     "google-merchants": {
       "command": "npx",
-      "args": ["-y", "mcp-google-merchants"],
+      "args": ["-y", "mcp-google-merchants@latest"],
       "env": {
         "GOOGLE_MERCHANTS_CLIENT_ID": "your_client_id",
         "GOOGLE_MERCHANTS_CLIENT_SECRET": "your_client_secret",
@@ -188,7 +188,7 @@ claude mcp add google-merchants \
     "google-merchants": {
       "type": "stdio",
       "command": "npx",
-      "args": ["-y", "mcp-google-merchants"],
+      "args": ["-y", "mcp-google-merchants@latest"],
       "env": {
         "GOOGLE_MERCHANTS_CLIENT_ID": "your_client_id",
         "GOOGLE_MERCHANTS_CLIENT_SECRET": "your_client_secret",
