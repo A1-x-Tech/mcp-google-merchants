@@ -108,7 +108,8 @@ export function registerProductTools(server: McpServer, client: MerchantsClient)
       description:
         "Uploads (upserts) a product into an API data source: an existing input with the same " +
         "contentLanguage~feedLabel~offerId in that data source is fully replaced. Requires data_source " +
-        "(an API-type source — create one in Merchant Center or via the API; file feeds cannot be written). " +
+        "(an API-type source — create one with create_data_source or in Merchant Center; file feeds cannot " +
+        "be written). " +
         "Inserting with a different data source MOVES the product to it. Returns the ProductInput (name, " +
         "product = the future processed name, base64EncodedProduct). Processing is async: the processed " +
         "product shows up in get_product/list_products after several minutes, and data-quality problems " +
@@ -170,6 +171,83 @@ export function registerProductTools(server: McpServer, client: MerchantsClient)
             offerId: offer_id,
             contentLanguage: content_language,
             feedLabel: feed_label,
+            productAttributes: product_attributes,
+            customAttributes: custom_attributes,
+            versionNumber: version_number,
+          }),
+        );
+      } catch (e) {
+        return fail(e);
+      }
+    },
+  );
+
+  server.registerTool(
+    "update_product_input",
+    {
+      title: "Update a product input",
+      annotations: WRITE,
+      description:
+        "Sparse-updates an existing product input — the cheap way to change price or availability without " +
+        "re-sending the whole product. data_source must be the source holding the input. update_mask is a " +
+        'comma-separated list of attribute paths (e.g. "productAttributes.price,productAttributes.availability"); ' +
+        "when omitted, all populated fields of the request are applied. Returns the updated ProductInput; " +
+        "the processed product refreshes after async processing (minutes). To create a product or replace " +
+        "it wholesale use insert_product_input.",
+      inputSchema: {
+        account: accountParam(),
+        product_input: z
+          .string()
+          .min(1)
+          .describe('Product input ID: "contentLanguage~feedLabel~offerId" or the base64url name.'),
+        data_source: dataSourceParam(),
+        update_mask: z
+          .string()
+          .min(1)
+          .optional()
+          .describe(
+            'Comma-separated attribute paths to update, e.g. "productAttributes.price". ' +
+              "Omit to apply every populated field of this request.",
+          ),
+        product_attributes: z
+          .record(z.any())
+          .optional()
+          .describe(
+            "Product attributes to change (camelCase), e.g. " +
+              '{"price": {"amountMicros": "8990000", "currencyCode": "USD"}, "availability": "out_of_stock"}.',
+          ),
+        custom_attributes: z
+          .array(
+            z.object({
+              name: z.string().min(1).describe("Custom attribute name."),
+              value: z.string().describe("Custom attribute value."),
+            }),
+          )
+          .optional()
+          .describe("Custom (non-standard) attributes as {name, value} pairs."),
+        version_number: z
+          .string()
+          .regex(/^\d+$/, "int64 as a decimal string")
+          .optional()
+          .describe("Optional int64 freshness guard (as a string)."),
+      },
+    },
+    async ({
+      account,
+      product_input,
+      data_source,
+      update_mask,
+      product_attributes,
+      custom_attributes,
+      version_number,
+    }) => {
+      try {
+        return ok(
+          await client.updateProductInput({
+            account,
+            productInput: product_input,
+            dataSource: data_source,
+            updateMask: update_mask,
             productAttributes: product_attributes,
             customAttributes: custom_attributes,
             versionNumber: version_number,

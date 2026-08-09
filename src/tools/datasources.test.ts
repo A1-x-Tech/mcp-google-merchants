@@ -30,7 +30,76 @@ function harness(respond: () => Response = () => new Response('{"ok":true}', { s
 test("registers the data source tools", () => {
   const { tools, restore } = harness();
   restore();
-  assert.deepEqual(Object.keys(tools).sort(), ["fetch_data_source", "get_data_source", "list_data_sources"]);
+  assert.deepEqual(Object.keys(tools).sort(), [
+    "create_data_source",
+    "fetch_data_source",
+    "get_data_source",
+    "list_data_sources",
+  ]);
+});
+
+test("create_data_source builds the primary-products wire body", async () => {
+  const { tools, calls, restore } = harness();
+  try {
+    await tools.create_data_source({
+      display_name: "API feed",
+      type: "primary_products",
+      content_language: "en",
+      feed_label: "US",
+      countries: ["US"],
+    });
+    assert.equal(calls[0].method, "POST");
+    assert.equal(new URL(calls[0].url).pathname, "/datasources/v1/accounts/111/dataSources");
+    assert.deepEqual(calls[0].body, {
+      displayName: "API feed",
+      primaryProductDataSource: { contentLanguage: "en", feedLabel: "US", countries: ["US"] },
+    });
+  } finally {
+    restore();
+  }
+});
+
+test("create_data_source builds the promotions wire body", async () => {
+  const { tools, calls, restore } = harness();
+  try {
+    await tools.create_data_source({
+      display_name: "Promos",
+      type: "promotions",
+      content_language: "en",
+      target_country: "US",
+    });
+    assert.deepEqual(calls[0].body, {
+      displayName: "Promos",
+      promotionDataSource: { targetCountry: "US", contentLanguage: "en" },
+    });
+  } finally {
+    restore();
+  }
+});
+
+test("create_data_source validates cross-field rules locally — no request is made", async () => {
+  const { tools, calls, restore } = harness();
+  try {
+    const halfPair = await tools.create_data_source({
+      display_name: "X",
+      type: "primary_products",
+      content_language: "en",
+    });
+    assert.equal(halfPair.isError, true);
+    assert.match(halfPair.content[0].text, /both set or both omitted/);
+
+    const promoNoCountry = await tools.create_data_source({
+      display_name: "X",
+      type: "promotions",
+      content_language: "en",
+    });
+    assert.equal(promoNoCountry.isError, true);
+    assert.match(promoNoCountry.content[0].text, /target_country/);
+
+    assert.equal(calls.length, 0);
+  } finally {
+    restore();
+  }
 });
 
 test("list_data_sources hits datasources/v1", async () => {

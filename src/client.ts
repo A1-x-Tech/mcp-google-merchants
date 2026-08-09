@@ -39,6 +39,18 @@ export interface InsertProductInputParams extends AccountScopedParams {
   versionNumber?: string;
 }
 
+export interface UpdateProductInputParams extends AccountScopedParams {
+  /** `contentLanguage~feedLabel~offerId` or the base64url name. */
+  productInput: string;
+  /** Data source holding the input: numeric ID or full resource name. */
+  dataSource: string;
+  /** Comma-separated attribute paths; omitted = all populated fields. */
+  updateMask?: string;
+  productAttributes?: Record<string, unknown>;
+  customAttributes?: Array<{ name: string; value: string }>;
+  versionNumber?: string;
+}
+
 export interface DeleteProductInputParams extends AccountScopedParams {
   /** `contentLanguage~feedLabel~offerId` or the base64url name. */
   productInput: string;
@@ -48,6 +60,21 @@ export interface DeleteProductInputParams extends AccountScopedParams {
 export interface DataSourceParams extends AccountScopedParams {
   /** Numeric data source ID or full resource name. */
   dataSource: string;
+}
+
+/** Only API (generic) data sources can be created through the Merchant API. */
+export type DataSourceType = "primary_products" | "supplemental_products" | "promotions";
+
+export interface CreateDataSourceParams extends AccountScopedParams {
+  displayName: string;
+  type: DataSourceType;
+  /** ISO 639-1; product sources: set together with feedLabel or not at all. */
+  contentLanguage?: string;
+  feedLabel?: string;
+  /** CLDR country codes; primary product sources only. */
+  countries?: string[];
+  /** CLDR country code; promotion sources only (the API requires it there). */
+  targetCountry?: string;
 }
 
 export interface InsertPromotionParams extends AccountScopedParams {
@@ -335,6 +362,16 @@ export class MerchantsClient {
     return this.request("GET", `accounts/v1/${this.accountPath(p.account)}`);
   }
 
+  /** The store homepage and its claim status. */
+  async getHomepage(p: AccountScopedParams = {}): Promise<unknown> {
+    return this.request("GET", `accounts/v1/${this.accountPath(p.account)}/homepage`);
+  }
+
+  /** Account-level shipping settings (kept read-only: the only write is a full replace). */
+  async getShippingSettings(p: AccountScopedParams = {}): Promise<unknown> {
+    return this.request("GET", `accounts/v1/${this.accountPath(p.account)}/shippingSettings`);
+  }
+
   // --- Products ---
 
   /** Processed products, as shown in Merchant Center. */
@@ -369,6 +406,21 @@ export class MerchantsClient {
     );
   }
 
+  /** Sparse-updates an existing product input (price, availability, ...). */
+  async updateProductInput(p: UpdateProductInputParams): Promise<unknown> {
+    const acct = this.accountPath(p.account);
+    return this.request(
+      "PATCH",
+      `products/v1/${acct}/productInputs/${encodeURIComponent(p.productInput)}`,
+      compact({
+        productAttributes: p.productAttributes,
+        customAttributes: p.customAttributes,
+        versionNumber: p.versionNumber,
+      }),
+      { dataSource: this.dataSourceName(acct, p.dataSource), updateMask: p.updateMask },
+    );
+  }
+
   /** Deletes a product input from a specific data source. */
   async deleteProductInput(p: DeleteProductInputParams): Promise<unknown> {
     const acct = this.accountPath(p.account);
@@ -395,6 +447,29 @@ export class MerchantsClient {
     const acct = this.accountPath(p.account);
     const name = this.dataSourceName(acct, p.dataSource);
     return this.request("GET", `datasources/v1/${name}`);
+  }
+
+  /** Creates an API (generic) data source — the target for product/promotion writes. */
+  async createDataSource(p: CreateDataSourceParams): Promise<unknown> {
+    const body: Record<string, unknown> = { displayName: p.displayName };
+    if (p.type === "primary_products") {
+      body.primaryProductDataSource = compact({
+        contentLanguage: p.contentLanguage,
+        feedLabel: p.feedLabel,
+        countries: p.countries,
+      });
+    } else if (p.type === "supplemental_products") {
+      body.supplementalProductDataSource = compact({
+        contentLanguage: p.contentLanguage,
+        feedLabel: p.feedLabel,
+      });
+    } else {
+      body.promotionDataSource = compact({
+        targetCountry: p.targetCountry,
+        contentLanguage: p.contentLanguage,
+      });
+    }
+    return this.request("POST", `datasources/v1/${this.accountPath(p.account)}/dataSources`, body);
   }
 
   /** Triggers an immediate re-fetch of a file-based feed (fails for API sources). */
@@ -471,6 +546,16 @@ export class MerchantsClient {
       undefined,
       { filter: p.filter, pageSize: p.pageSize, pageToken: p.pageToken },
     );
+  }
+
+  // --- Quota ---
+
+  /** Per-method-group API usage vs limits (daily counters reset at 12:00 UTC). */
+  async listMethodQuotas(p: PageParams = {}): Promise<unknown> {
+    return this.request("GET", `quota/v1/${this.accountPath(p.account)}/quotas`, undefined, {
+      pageSize: p.pageSize,
+      pageToken: p.pageToken,
+    });
   }
 }
 

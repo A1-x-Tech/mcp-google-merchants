@@ -13,7 +13,8 @@ export function registerRawTool(server: McpServer, client: MerchantsClient): voi
       annotations: DESTRUCTIVE,
       description:
         "Escape hatch to call any Merchant API v1 path directly, for endpoints without a dedicated tool " +
-        '(e.g. "accounts/v1/accounts/123/homepage" or "quota/v1/accounts/123/quotas"). The path must include ' +
+        '(e.g. "accounts/v1/accounts/123/issues" or the one-time ' +
+        '"accounts/v1/accounts/123/developerRegistration:registerGcp"). The path must include ' +
         "the sub-API prefix (accounts/v1, products/v1, datasources/v1, promotions/v1, reports/v1, " +
         "issueresolution/v1, quota/v1, inventories/v1, ...). `query` adds URL query parameters (e.g. " +
         "dataSource for productInputs writes, updateMask for PATCH); `body` is sent as JSON. Can create, " +
@@ -22,7 +23,7 @@ export function registerRawTool(server: McpServer, client: MerchantsClient): voi
         path: z
           .string()
           .min(1)
-          .describe('Relative API path incl. the sub-API prefix, e.g. "accounts/v1/accounts/123/homepage".'),
+          .describe('Relative API path incl. the sub-API prefix, e.g. "accounts/v1/accounts/123/issues".'),
         method: z
           .enum(["GET", "POST", "PATCH", "DELETE"])
           .optional()

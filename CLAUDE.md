@@ -38,7 +38,7 @@ npm run smoke      # live READ-ONLY call (needs real credentials)
   an AbortController timeout that also covers reading the body, and throws
   `MerchantsError(status, body)` (decodes the Google error envelope).
 - `src/tools/*.ts` — one register fn per domain (`accounts`, `products`, `datasources`,
-  `promotions`, `reports`, `issues`) + `raw.ts` (`raw_request`, full method enum,
+  `promotions`, `reports`, `issues`, `quota`) + `raw.ts` (`raw_request`, full method enum,
   DESTRUCTIVE annotations). `util.ts` — `ok`/`fail`, the `READ_ONLY`/`WRITE`/`DESTRUCTIVE`
   annotation constants and shared zod schema factories.
 - `src/index.ts` — wires every `register*` into the McpServer.
@@ -48,8 +48,9 @@ npm run smoke      # live READ-ONLY call (needs real credentials)
 ## Conventions (do not break)
 
 - **Annotations are pinned per tool** in `src/tools/annotations.test.ts`: reads are
-  `READ_ONLY`, `insert_*`/`fetch_data_source` are `WRITE`, `delete_product_input` and
-  `raw_request` are `DESTRUCTIVE`. A new tool must be added to the pinned map consciously.
+  `READ_ONLY`; `insert_*`, `update_product_input`, `create_data_source` and
+  `fetch_data_source` are `WRITE`; `delete_product_input` and `raw_request` are
+  `DESTRUCTIVE`. A new tool must be added to the pinned map consciously.
 - **Writes are never replayed.** Only GET retries 5xx/network errors — a 502 after a
   committed insert would otherwise duplicate it. 429 retries on any method.
 - **Wire mapping lives in the client, not the tools.** Tools accept snake_case inputs
@@ -57,8 +58,8 @@ npm run smoke      # live READ-ONLY call (needs real credentials)
   data-source IDs into full resource names and injects the default account.
 - **The default account is the client's job** (`accountPath()`); tools just pass the
   optional `account` through.
-- **`dataSource` is mandatory on every product write** — insert (query param), delete
-  (query param) — and for promotions it goes in the **body**. Don't move it.
+- **`dataSource` is mandatory on every product write** — insert, update and delete (query
+  param) — and for promotions it goes in the **body**. Don't move it.
 - **Validate inputs with zod** in `inputSchema`; use the schema **factories** in `util.ts`
   (a fresh schema per field avoids `$ref` dedup in the JSON schema).
 - **Output compact JSON via `ok`** — the consumer is an LLM; pretty-printing burns tokens.

@@ -10,16 +10,20 @@ import { MerchantsClient } from "../dist/client.js";
 const DIST_ENTRY = fileURLToPath(new URL("../dist/index.js", import.meta.url));
 
 const ALL_TOOLS = [
+  "create_data_source",
   "delete_product_input",
   "fetch_data_source",
   "get_account",
   "get_data_source",
+  "get_homepage",
   "get_product",
   "get_promotion",
+  "get_shipping_settings",
   "insert_product_input",
   "insert_promotion",
   "list_accounts",
   "list_data_sources",
+  "list_method_quotas",
   "list_product_issues",
   "list_products",
   "list_promotions",
@@ -27,6 +31,7 @@ const ALL_TOOLS = [
   "price_insights",
   "raw_request",
   "search_reports",
+  "update_product_input",
 ];
 
 test("dist binary completes a real MCP handshake over stdio and lists every tool", async () => {

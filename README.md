@@ -35,12 +35,16 @@ re-fetches — with destructive tools clearly annotated so MCP hosts can gate th
 |---|---|
 | `list_accounts` | Merchant Center accounts you can access (with optional filter). |
 | `get_account` | One account's settings (name, language, time zone, ...). |
+| `get_homepage` | The store homepage and whether it is claimed. |
+| `get_shipping_settings` | Account-level shipping services and warehouses. |
 | `list_products` | Processed products as shown in Merchant Center, incl. statuses. |
 | `get_product` | One product with `itemLevelIssues` — why it is disapproved. |
 | `insert_product_input` | Upload (upsert) a product into an API data source. |
+| `update_product_input` | Sparse-update a product (price, availability, ...). |
 | `delete_product_input` | Delete a product input from a data source. |
 | `list_data_sources` | Feeds/data sources of the account (API, file, UI, autofeed). |
 | `get_data_source` | One data source with its feed and fetch configuration. |
+| `create_data_source` | Create an API data source for product/promotion writes. |
 | `fetch_data_source` | Trigger an immediate re-fetch of a file feed. |
 | `insert_promotion` | Create or update a promotion. |
 | `list_promotions` | Promotions with their approval statuses. |
@@ -49,6 +53,7 @@ re-fetches — with destructive tools clearly annotated so MCP hosts can gate th
 | `price_competitiveness` | Your prices vs market benchmarks (canned MCQL). |
 | `price_insights` | Google's suggested prices + predicted impact (canned MCQL). |
 | `list_product_issues` | Aggregated product issues per reporting context/country. |
+| `list_method_quotas` | API usage vs quota limits per method group. |
 | `raw_request` | Escape hatch to any Merchant API v1 path (SSRF-guarded). |
 
 Resilience: retries with backoff on 429 and on 5xx/network errors for reads (writes are never
@@ -259,7 +264,7 @@ passwords. The refresh token grants full read/write access to your Merchant Cent
 - **`list_product_issues`** works for sub-accounts and standalone accounts only, not for
   advanced (parent) accounts.
 - **Quotas are per-account** with daily counters resetting at 12:00 UTC (midday). Check your
-  current usage with `raw_request GET quota/v1/accounts/{account}/quotas`.
+  current usage with `list_method_quotas`.
 
 ## Documentation
 

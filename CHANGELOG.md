@@ -16,16 +16,19 @@ and the project adheres to [Semantic Versioning](https://semver.org/).
   `https://www.googleapis.com/auth/content`) or a pre-minted
   `GOOGLE_MERCHANTS_ACCESS_TOKEN`, plus an optional default account
   (`GOOGLE_MERCHANTS_ACCOUNT_ID`, overridable per tool call).
-- 17 tools:
-  - Accounts: `list_accounts`, `get_account`;
+- 22 tools:
+  - Accounts: `list_accounts`, `get_account`, `get_homepage`,
+    `get_shipping_settings`;
   - Products: `list_products`, `get_product`, `insert_product_input`,
-    `delete_product_input` (v1 product IDs `contentLanguage~feedLabel~offerId`,
-    `dataSource` enforced on every write);
-  - Data sources: `list_data_sources`, `get_data_source`, `fetch_data_source`;
+    `update_product_input`, `delete_product_input` (v1 product IDs
+    `contentLanguage~feedLabel~offerId`, `dataSource` enforced on every write);
+  - Data sources: `list_data_sources`, `get_data_source`, `create_data_source`,
+    `fetch_data_source`;
   - Promotions: `insert_promotion`, `list_promotions`, `get_promotion`;
   - Reports: `search_reports` (raw MCQL) and the canned wrappers
     `price_competitiveness`, `price_insights` (Market Insights views);
-  - Issues: `list_product_issues` (aggregate product statuses);
+  - Issues & quota: `list_product_issues` (aggregate product statuses),
+    `list_method_quotas` (API usage vs limits);
   - `raw_request` escape hatch to any Merchant API v1 path (SSRF-guarded).
 - Resilience: retries with backoff on 429 (any method) and on 5xx/network
   errors (GET only — writes are never replayed), `Retry-After` support,
@@ -35,7 +38,7 @@ and the project adheres to [Semantic Versioning](https://semver.org/).
   names/versions only, never data or arguments; opt out with `ASKADS_TELEMETRY=0`).
 - Offline test suite (node:test + mocked `fetch`) covering every tool, plus a
   dist smoke test performing a real MCP handshake with the built binary over stdio.
-- CI (Node 20/22) and a daily read-only live health check (skipped when
+- CI (Node 20/22/24) and a daily read-only live health check (skipped when
   secrets are not configured).
 
 [Unreleased]: https://github.com/A1-x-Tech/mcp-google-merchants/compare/v0.1.0...HEAD

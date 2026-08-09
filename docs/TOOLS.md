@@ -15,6 +15,8 @@ This is a **write-capable** server: tools are annotated `READ_ONLY`, `WRITE` or
 |---|---|
 | `list_accounts` | Merchant Center accounts the authenticated user can access. Optional `filter` (account filter syntax, e.g. `accountName = "*store*"`), paging up to 500. |
 | `get_account` | One account: `name`, `accountId`, `accountName`, `languageCode`, `timeZone`, `adultContent`, `testAccount`. |
+| `get_homepage` | The store homepage: `uri` and `claimed` (an unclaimed homepage is a common account-level problem). Claim/unclaim are not exposed — use `raw_request` `POST .../homepage:claim`. |
+| `get_shipping_settings` | Account-level shipping settings: `services[]`, `warehouses[]`, `etag`. Read-only by design — the API's only write is a full replace (`shippingSettings:insert`). |
 
 ## Products
 
@@ -23,6 +25,7 @@ This is a **write-capable** server: tools are annotated `READ_ONLY`, `WRITE` or
 | `list_products` | Processed products (as shown in Merchant Center) with `productStatus.itemLevelIssues`. No server-side filter — filter via `search_reports` on `product_view`. Paging up to 1000. |
 | `get_product` | One processed product incl. issues. Accepts `product` = `contentLanguage~feedLabel~offerId` (or the base64url `base64EncodedName`), or the three components separately. |
 | `insert_product_input` | **WRITE.** Upserts a product into an API data source (`data_source` required; same ID in the same source is fully replaced; a different source *moves* the product). Processing is async (minutes). |
+| `update_product_input` | **WRITE.** Sparse update of an existing product input (price, availability, ...). `update_mask` is a comma-separated list of attribute paths; omitted = all populated fields are applied. |
 | `delete_product_input` | **DESTRUCTIVE.** Deletes a product input from a specific data source (`data_source` required). |
 
 ## Data sources
@@ -31,6 +34,7 @@ This is a **write-capable** server: tools are annotated `READ_ONLY`, `WRITE` or
 |---|---|
 | `list_data_sources` | Data sources with `input` type (API / FILE / UI / AUTOFEED) and feed configuration. Product/promotion writes need an **API-type** source. |
 | `get_data_source` | One data source by numeric ID or full resource name. |
+| `create_data_source` | **WRITE.** Creates an API (generic) data source — the `data_source` target product/promotion writes need. `content_language` + `feed_label` both set or both omitted; promotions sources need `target_country` + `content_language`. |
 | `fetch_data_source` | **WRITE.** Immediate re-fetch of a **file-based** feed outside its schedule; errors on API-type sources. |
 
 ## Promotions
@@ -59,6 +63,12 @@ has exactly one populated view object.
 |---|---|
 | `list_product_issues` | Aggregate product statuses per reporting context and country (`issueresolution/v1`): active/pending/disapproved/expiring counts + `itemLevelIssues[]` with affected-product counts. Sub-accounts and standalone accounts only. `filter` supports only `reporting_context` and `country`. |
 
+## Quota
+
+| Tool | Description |
+|---|---|
+| `list_method_quotas` | API usage vs limits per method group (`quota/v1`): `quotaUsage`, `quotaLimit` (per day), `quotaMinuteLimit`, `methodDetails[]`. Daily counters reset at 12:00 UTC (midday, not midnight). The go-to tool when you hit HTTP 429. |
+
 Notes:
 - **Product IDs (v1):** `contentLanguage~feedLabel~offerId` — **no channel segment**
   (that was v1beta). Legacy local-only products use a `local~` prefix. If `offerId`
@@ -74,7 +84,7 @@ Notes:
 
 | Tool | Description |
 |---|---|
-| `raw_request` | **DESTRUCTIVE.** Call any Merchant API v1 path directly (e.g. `quota/v1/accounts/{a}/quotas`, `accounts/v1/accounts/{a}/homepage`, or the one-time `accounts/v1/accounts/{a}/developerRegistration:registerGcp`). Supports GET/POST/PATCH/DELETE, URL `query` params and a JSON `body`. A `path` that resolves to a foreign origin is rejected (SSRF guard). |
+| `raw_request` | **DESTRUCTIVE.** Call any Merchant API v1 path directly (e.g. `accounts/v1/accounts/{a}/issues`, or the one-time `accounts/v1/accounts/{a}/developerRegistration:registerGcp`). Supports GET/POST/PATCH/DELETE, URL `query` params and a JSON `body`. A `path` that resolves to a foreign origin is rejected (SSRF guard). |
 
 ## Environment variables
 

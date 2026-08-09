@@ -12,6 +12,7 @@ import { registerDataSourceTools } from "./tools/datasources.js";
 import { registerPromotionTools } from "./tools/promotions.js";
 import { registerReportTools } from "./tools/reports.js";
 import { registerIssueTools } from "./tools/issues.js";
+import { registerQuotaTools } from "./tools/quota.js";
 import { registerRawTool } from "./tools/raw.js";
 
 /** Reads the package version so the server reports its real version to MCP clients. */
@@ -66,6 +67,7 @@ async function main(): Promise<void> {
   registerPromotionTools(server, client);
   registerReportTools(server, client);
   registerIssueTools(server, client);
+  registerQuotaTools(server, client);
   registerRawTool(server, client);
 
   const transport = new StdioServerTransport();

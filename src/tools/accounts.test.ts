@@ -31,7 +31,26 @@ function harness(respond: () => Response = () => new Response('{"ok":true}', { s
 test("registers the account tools", () => {
   const { tools, restore } = harness();
   restore();
-  assert.deepEqual(Object.keys(tools).sort(), ["get_account", "list_accounts"]);
+  assert.deepEqual(Object.keys(tools).sort(), [
+    "get_account",
+    "get_homepage",
+    "get_shipping_settings",
+    "list_accounts",
+  ]);
+});
+
+test("get_homepage and get_shipping_settings hit the account singletons", async () => {
+  const { tools, calls, restore } = harness();
+  try {
+    await tools.get_homepage({});
+    assert.equal(calls[0].method, "GET");
+    assert.equal(calls[0].url, "https://merchantapi.googleapis.com/accounts/v1/accounts/111/homepage");
+    await tools.get_shipping_settings({ account: "222" });
+    assert.equal(calls[1].method, "GET");
+    assert.equal(calls[1].url, "https://merchantapi.googleapis.com/accounts/v1/accounts/222/shippingSettings");
+  } finally {
+    restore();
+  }
 });
 
 test("list_accounts passes paging and filter through as query params", async () => {

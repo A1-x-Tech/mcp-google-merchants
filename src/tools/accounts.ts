@@ -55,4 +55,50 @@ export function registerAccountTools(server: McpServer, client: MerchantsClient)
       }
     },
   );
+
+  server.registerTool(
+    "get_homepage",
+    {
+      title: "Get the store homepage",
+      annotations: READ_ONLY,
+      description:
+        "Returns the store homepage of an account: uri and claimed (whether the homepage is verified and " +
+        "claimed by the merchant — a prerequisite for serving offers). An unclaimed homepage is a common " +
+        "reason for account-level problems; claiming/unclaiming is not exposed as a tool (use raw_request " +
+        "POST accounts/v1/accounts/{a}/homepage:claim if you really need it).",
+      inputSchema: {
+        account: accountParam(),
+      },
+    },
+    async ({ account }) => {
+      try {
+        return ok(await client.getHomepage({ account }));
+      } catch (e) {
+        return fail(e);
+      }
+    },
+  );
+
+  server.registerTool(
+    "get_shipping_settings",
+    {
+      title: "Get shipping settings",
+      annotations: READ_ONLY,
+      description:
+        "Returns the account-level shipping settings: services[] (delivery countries, delivery times, rate " +
+        "tables and carrier rates), warehouses[] and an etag. Read-only by design: the API's only write is " +
+        "shippingSettings:insert, a FULL REPLACE of every service — too dangerous for a tool; use " +
+        "raw_request if you really need it.",
+      inputSchema: {
+        account: accountParam(),
+      },
+    },
+    async ({ account }) => {
+      try {
+        return ok(await client.getShippingSettings({ account }));
+      } catch (e) {
+        return fail(e);
+      }
+    },
+  );
 }

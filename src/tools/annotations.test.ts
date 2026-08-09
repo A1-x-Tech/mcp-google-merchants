@@ -6,6 +6,7 @@ import { registerDataSourceTools } from "./datasources.js";
 import { registerPromotionTools } from "./promotions.js";
 import { registerReportTools } from "./reports.js";
 import { registerIssueTools } from "./issues.js";
+import { registerQuotaTools } from "./quota.js";
 import { registerRawTool } from "./raw.js";
 import { DESTRUCTIVE, READ_ONLY, WRITE } from "./util.js";
 
@@ -31,6 +32,7 @@ function collectAnnotations(): Record<string, Annotations | undefined> {
   registerPromotionTools(server as never, {} as never);
   registerReportTools(server as never, {} as never);
   registerIssueTools(server as never, {} as never);
+  registerQuotaTools(server as never, {} as never);
   registerRawTool(server as never, {} as never);
   return annotations;
 }
@@ -46,10 +48,13 @@ const EXPECTED: Record<string, Annotations> = {
   // reads
   get_account: READ_ONLY,
   get_data_source: READ_ONLY,
+  get_homepage: READ_ONLY,
   get_product: READ_ONLY,
   get_promotion: READ_ONLY,
+  get_shipping_settings: READ_ONLY,
   list_accounts: READ_ONLY,
   list_data_sources: READ_ONLY,
+  list_method_quotas: READ_ONLY,
   list_product_issues: READ_ONLY,
   list_products: READ_ONLY,
   list_promotions: READ_ONLY,
@@ -57,9 +62,11 @@ const EXPECTED: Record<string, Annotations> = {
   price_insights: READ_ONLY,
   search_reports: READ_ONLY,
   // writes
+  create_data_source: WRITE,
   fetch_data_source: WRITE,
   insert_product_input: WRITE,
   insert_promotion: WRITE,
+  update_product_input: WRITE,
   // destructive
   delete_product_input: DESTRUCTIVE,
   raw_request: DESTRUCTIVE,

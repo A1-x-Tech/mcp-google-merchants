@@ -35,7 +35,30 @@ test("registers the product tools", () => {
     "get_product",
     "insert_product_input",
     "list_products",
+    "update_product_input",
   ]);
+});
+
+test("update_product_input PATCHes with dataSource + updateMask query params", async () => {
+  const { tools, calls, restore } = harness();
+  try {
+    await tools.update_product_input({
+      product_input: "en~US~sku123",
+      data_source: "104628",
+      update_mask: "productAttributes.price",
+      product_attributes: { price: { amountMicros: "8990000", currencyCode: "USD" } },
+    });
+    const url = new URL(calls[0].url);
+    assert.equal(calls[0].method, "PATCH");
+    assert.equal(url.pathname, "/products/v1/accounts/111/productInputs/en~US~sku123");
+    assert.equal(url.searchParams.get("dataSource"), "accounts/111/dataSources/104628");
+    assert.equal(url.searchParams.get("updateMask"), "productAttributes.price");
+    assert.deepEqual(calls[0].body, {
+      productAttributes: { price: { amountMicros: "8990000", currencyCode: "USD" } },
+    });
+  } finally {
+    restore();
+  }
 });
 
 test("list_products hits products/v1 with paging", async () => {
