@@ -1,6 +1,6 @@
 {
   "name": "mcp-google-merchants",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "MCP server for Google Merchant Center (Merchant API v1) — products, data sources, promotions, MCQL reports, price competitiveness and product issues for AI agents. OAuth with write support.",
   "mcpName": "io.github.A1-x-Tech/mcp-google-merchants",
   "type": "module",
