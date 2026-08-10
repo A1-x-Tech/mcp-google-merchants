@@ -22,6 +22,11 @@ jobs:
   smoke:
     runs-on: ubuntu-latest
     if: github.repository == 'A1-x-Tech/mcp-google-merchants'
+    env:
+      GOOGLE_MERCHANTS_CLIENT_ID: ${{ secrets.GOOGLE_MERCHANTS_CLIENT_ID }}
+      GOOGLE_MERCHANTS_CLIENT_SECRET: ${{ secrets.GOOGLE_MERCHANTS_CLIENT_SECRET }}
+      GOOGLE_MERCHANTS_REFRESH_TOKEN: ${{ secrets.GOOGLE_MERCHANTS_REFRESH_TOKEN }}
+      GOOGLE_MERCHANTS_ACCOUNT_ID: ${{ secrets.GOOGLE_MERCHANTS_ACCOUNT_ID }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -30,10 +35,8 @@ jobs:
           cache: npm
       - run: npm ci
       - name: Read-only smoke check
-        if: ${{ secrets.GOOGLE_MERCHANTS_REFRESH_TOKEN != '' }}
+        if: env.GOOGLE_MERCHANTS_REFRESH_TOKEN != ''
         run: npm run smoke
-        env:
-          GOOGLE_MERCHANTS_CLIENT_ID: ${{ secrets.GOOGLE_MERCHANTS_CLIENT_ID }}
-          GOOGLE_MERCHANTS_CLIENT_SECRET: ${{ secrets.GOOGLE_MERCHANTS_CLIENT_SECRET }}
-          GOOGLE_MERCHANTS_REFRESH_TOKEN: ${{ secrets.GOOGLE_MERCHANTS_REFRESH_TOKEN }}
-          GOOGLE_MERCHANTS_ACCOUNT_ID: ${{ secrets.GOOGLE_MERCHANTS_ACCOUNT_ID }}
+      - name: Skipped (no secrets configured)
+        if: env.GOOGLE_MERCHANTS_REFRESH_TOKEN == ''
+        run: echo "GOOGLE_MERCHANTS_* secrets are not set — live smoke skipped."
