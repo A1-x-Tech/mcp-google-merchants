@@ -15,6 +15,27 @@ import { registerIssueTools } from "./tools/issues.js";
 import { registerQuotaTools } from "./tools/quota.js";
 import { registerRawTool } from "./tools/raw.js";
 
+/**
+ * Prose the calling model receives in the `initialize` result, before it picks a
+ * tool — the only place to say what the tool list cannot: which Google product
+ * this is (the feed, not the ads cabinet), where the writes stop, the one-time
+ * registration without which nothing works, and which answers mean something
+ * other than they say. English, like the tool descriptions.
+ */
+const INSTRUCTIONS =
+  "Google Merchant Center through the Merchant API v1 is the product feed behind Shopping ads, not " +
+  "an ads cabinet — campaigns, budgets and bids live in Google Ads, not here. Writes are limited to " +
+  "product inputs, promotions, new API data sources and file-feed re-fetches; everything else is " +
+  "read-only unless you use raw_request. list_products cannot filter — filter via search_reports " +
+  "(MCQL) — and product writes need an API-type data source, never a file feed, surfacing in the " +
+  "processed views minutes later. Every call fails with a permission error until the Cloud project " +
+  "is registered once with the account (raw_request POST " +
+  "accounts/v1/accounts/{a}/developerRegistration:registerGcp) — check that before blaming OAuth. " +
+  "On 429 read list_method_quotas: quotas are per account and daily counters reset at 12:00 UTC, " +
+  "not midnight. Empty price_competitiveness/price_insights rows usually mean no Market Insights " +
+  "opt-in rather than no data, and list_product_issues does not cover advanced (parent) accounts. " +
+  "delete_product_input and raw_request change a live feed irreversibly.";
+
 /** Reads the package version so the server reports its real version to MCP clients. */
 function readVersion(): string {
   try {
@@ -50,10 +71,13 @@ async function main(): Promise<void> {
   const config = await loadConfigOrExit(telemetry);
   const client = new MerchantsClient(config);
 
-  const server = new McpServer({
-    name: "mcp-google-merchants",
-    version: readVersion(),
-  });
+  const server = new McpServer(
+    {
+      name: "mcp-google-merchants",
+      version: readVersion(),
+    },
+    { instructions: INSTRUCTIONS },
+  );
 
   instrumentToolCalls(server, telemetry);
   server.server.oninitialized = () => {

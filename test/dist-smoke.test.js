@@ -53,6 +53,12 @@ test("dist binary completes a real MCP handshake over stdio and lists every tool
     assert.equal(server?.name, "mcp-google-merchants");
     assert.match(String(server?.version), /^\d+\.\d+\.\d+$/);
 
+    // The initialize result also carries the prose the calling model reads
+    // before it picks a tool — an empty one would ship the server unbriefed.
+    const instructions = client.getInstructions();
+    assert.equal(typeof instructions, "string", "initialize result must carry instructions");
+    assert.ok(instructions.trim().length > 0, "instructions must not be empty");
+
     const { tools } = await client.listTools();
     assert.deepEqual(tools.map((t) => t.name).sort(), ALL_TOOLS);
     for (const tool of tools) {
