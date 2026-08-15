@@ -99,6 +99,6 @@ Notes:
 | `GOOGLE_MERCHANTS_TOKEN_URL` | no | `https://oauth2.googleapis.com/token` | OAuth token endpoint override. |
 | `GOOGLE_MERCHANTS_TIMEOUT_MS` | no | `60000` | Per-request timeout, ms. |
 | `GOOGLE_MERCHANTS_MAX_RETRIES` | no | `3` | Retries on transient errors (429 any method; 5xx/network GET only). |
-| `ASKADS_TELEMETRY` | no | enabled | `0`, `false`, `off` or `no` disables anonymous telemetry (see the README's Data & telemetry section). |
+| `ASKADS_TELEMETRY` | no | enabled | `0`, `false`, `off` or `no` disables anonymous telemetry (see [DEVELOPMENT.md](./DEVELOPMENT.md)). |
 
 \* Either the refresh trio or a bare access token.

@@ -25,9 +25,8 @@ and the project adheres to [Semantic Versioning](https://semver.org/).
 
 ### Added
 
-- README now discloses the anonymous telemetry (`usage.gistrec.cloud`) in a Data & telemetry
-  section, including the `ASKADS_TELEMETRY` opt-out (previously documented only in
-  docs/DEVELOPMENT.md, which is not shipped in the npm tarball).
+- docs/TOOLS.md now lists `ASKADS_TELEMETRY` in the environment variables table, pointing to
+  the telemetry description in docs/DEVELOPMENT.md.
 
 ## [1.0.1] — 2026-08-12
 
