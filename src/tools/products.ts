@@ -13,6 +13,36 @@ import {
   WRITE,
 } from "./util.js";
 
+/**
+ * AIP-134 patch semantics: a path listed in updateMask with no matching value
+ * in the body ERASES that attribute from the input — the API answers with a
+ * successful ProductInput either way. Models copy masks around, so a stray
+ * "productAttributes.price" next to an availability-only body would silently
+ * drop the price; reject such requests before they reach the API. Unknown
+ * paths are left for the API to judge.
+ */
+function unvaluedMaskPaths(
+  mask: string,
+  attributes: Record<string, unknown> | undefined,
+  custom: unknown[] | undefined,
+  version: string | undefined,
+): string[] {
+  return mask
+    .split(",")
+    .map((path) => path.trim())
+    .filter((path) => path.length > 0)
+    .filter((path) => {
+      if (path === "productAttributes") return attributes === undefined;
+      if (path.startsWith("productAttributes.")) {
+        const key = path.slice("productAttributes.".length).split(".")[0];
+        return attributes?.[key] === undefined;
+      }
+      if (path === "customAttributes") return custom === undefined;
+      if (path === "versionNumber") return version === undefined;
+      return false;
+    });
+}
+
 export function registerProductTools(server: McpServer, client: MerchantsClient): void {
   server.registerTool(
     "list_products",
@@ -104,7 +134,7 @@ export function registerProductTools(server: McpServer, client: MerchantsClient)
     "insert_product_input",
     {
       title: "Insert or replace a product",
-      annotations: WRITE,
+      annotations: DESTRUCTIVE,
       description:
         "Uploads (upserts) a product into an API data source: an existing input with the same " +
         "contentLanguage~feedLabel~offerId in that data source is fully replaced. Requires data_source " +
@@ -191,7 +221,10 @@ export function registerProductTools(server: McpServer, client: MerchantsClient)
         "Sparse-updates an existing product input — the cheap way to change price or availability without " +
         "re-sending the whole product. data_source must be the source holding the input. update_mask is a " +
         'comma-separated list of attribute paths (e.g. "productAttributes.price,productAttributes.availability"); ' +
-        "when omitted, all populated fields of the request are applied. Returns the updated ProductInput; " +
+        "when omitted, all populated fields of the request are applied. Every path listed in update_mask " +
+        "MUST carry a value in this request — a masked path with no value ERASES that attribute (the tool " +
+        "rejects such requests locally; to clear an attribute intentionally use raw_request). " +
+        "Returns the updated ProductInput; " +
         "the processed product refreshes after async processing (minutes). To create a product or replace " +
         "it wholesale use insert_product_input.",
       inputSchema: {
@@ -241,6 +274,18 @@ export function registerProductTools(server: McpServer, client: MerchantsClient)
       custom_attributes,
       version_number,
     }) => {
+      if (update_mask) {
+        const missing = unvaluedMaskPaths(update_mask, product_attributes, custom_attributes, version_number);
+        if (missing.length > 0) {
+          return fail(
+            new Error(
+              `update_mask paths without a value would ERASE those attributes: ${missing.join(", ")}. ` +
+                "Give each masked path a value, or drop it from the mask. " +
+                "To clear an attribute intentionally, use raw_request.",
+            ),
+          );
+        }
+      }
       try {
         return ok(
           await client.updateProductInput({

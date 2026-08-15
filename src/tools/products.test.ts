@@ -61,6 +61,24 @@ test("update_product_input PATCHes with dataSource + updateMask query params", a
   }
 });
 
+test("update_product_input rejects a masked path with no value locally — no request is made", async () => {
+  const { tools, calls, restore } = harness();
+  try {
+    const res = await tools.update_product_input({
+      product_input: "en~US~sku123",
+      data_source: "104628",
+      update_mask: "productAttributes.price,productAttributes.availability",
+      product_attributes: { availability: "out_of_stock" },
+    });
+    assert.equal(res.isError, true);
+    assert.match(res.content[0].text, /ERASE/);
+    assert.match(res.content[0].text, /productAttributes\.price/);
+    assert.equal(calls.length, 0);
+  } finally {
+    restore();
+  }
+});
+
 test("list_products hits products/v1 with paging", async () => {
   const { tools, calls, restore } = harness();
   try {

@@ -24,8 +24,8 @@ This is a **write-capable** server: tools are annotated `READ_ONLY`, `WRITE` or
 |---|---|
 | `list_products` | Processed products (as shown in Merchant Center) with `productStatus.itemLevelIssues`. No server-side filter — filter via `search_reports` on `product_view`. Paging up to 1000. |
 | `get_product` | One processed product incl. issues. Accepts `product` = `contentLanguage~feedLabel~offerId` (or the base64url `base64EncodedName`), or the three components separately. |
-| `insert_product_input` | **WRITE.** Upserts a product into an API data source (`data_source` required; same ID in the same source is fully replaced; a different source *moves* the product). Processing is async (minutes). |
-| `update_product_input` | **WRITE.** Sparse update of an existing product input (price, availability, ...). `update_mask` is a comma-separated list of attribute paths; omitted = all populated fields are applied. |
+| `insert_product_input` | **DESTRUCTIVE.** Upserts a product into an API data source (`data_source` required; same ID in the same source is fully replaced; a different source *moves* the product). Processing is async (minutes). |
+| `update_product_input` | **WRITE.** Sparse update of an existing product input (price, availability, ...). `update_mask` is a comma-separated list of attribute paths; omitted = all populated fields are applied. Every masked path must carry a value in the request — a masked path without one **erases** that attribute (the tool rejects such requests locally). |
 | `delete_product_input` | **DESTRUCTIVE.** Deletes a product input from a specific data source (`data_source` required). |
 
 ## Data sources
@@ -99,5 +99,6 @@ Notes:
 | `GOOGLE_MERCHANTS_TOKEN_URL` | no | `https://oauth2.googleapis.com/token` | OAuth token endpoint override. |
 | `GOOGLE_MERCHANTS_TIMEOUT_MS` | no | `60000` | Per-request timeout, ms. |
 | `GOOGLE_MERCHANTS_MAX_RETRIES` | no | `3` | Retries on transient errors (429 any method; 5xx/network GET only). |
+| `ASKADS_TELEMETRY` | no | enabled | `0`, `false`, `off` or `no` disables anonymous telemetry (see [DEVELOPMENT.md](./DEVELOPMENT.md)). |
 
 \* Either the refresh trio or a bare access token.

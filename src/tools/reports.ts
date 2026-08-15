@@ -28,7 +28,7 @@ export function registerReportTools(server: McpServer, client: MerchantsClient):
           .describe(
             "MCQL query, e.g. SELECT offer_id, title, price FROM product_view WHERE availability = 'out of stock'.",
           ),
-        page_size: pageSizeParam(100_000, 1000),
+        page_size: pageSizeParam(5000, 1000),
         page_token: pageTokenParam(),
       },
     },
@@ -62,7 +62,7 @@ export function registerReportTools(server: McpServer, client: MerchantsClient):
           .regex(/^[A-Z]{2}$/, "two-letter CLDR country code")
           .optional()
           .describe('Two-letter CLDR country code to filter by, e.g. "US". Omit for all countries.'),
-        page_size: pageSizeParam(100_000, 1000),
+        page_size: pageSizeParam(5000, 1000),
         page_token: pageTokenParam(),
       },
     },
@@ -95,7 +95,7 @@ export function registerReportTools(server: McpServer, client: MerchantsClient):
         "as strings (int64).",
       inputSchema: {
         account: accountParam(),
-        page_size: pageSizeParam(100_000, 1000),
+        page_size: pageSizeParam(5000, 1000),
         page_token: pageTokenParam(),
       },
     },

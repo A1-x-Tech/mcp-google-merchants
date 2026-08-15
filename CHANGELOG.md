@@ -7,6 +7,27 @@ and the project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+### Changed
+
+- `insert_product_input` is now annotated **DESTRUCTIVE** (was WRITE): it wholesale-replaces an
+  existing input with the same ID and moves the product when given a different data source. Hosts
+  that gate destructive tools will now ask before it runs.
+- `update_product_input` now rejects, locally and before any API call, an `update_mask` path that
+  has no matching value in the request — the API treats such a path as "erase this attribute" and
+  answers with a successful ProductInput, so a copied mask could silently drop a price. Clearing
+  an attribute intentionally is still possible via `raw_request`.
+
+### Fixed
+
+- Report tools (`search_reports`, `price_competitiveness`, `price_insights`): the `page_size`
+  schema claimed a maximum of 100 000 while the API caps the page at 5000 — the schema now says
+  5000.
+
+### Added
+
+- docs/TOOLS.md now lists `ASKADS_TELEMETRY` in the environment variables table, pointing to
+  the telemetry description in docs/DEVELOPMENT.md.
+
 ## [1.0.1] — 2026-08-12
 
 ### Added
