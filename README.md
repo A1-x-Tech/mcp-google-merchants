@@ -21,17 +21,17 @@ Start with a read-only question:
 
 ## See it work in a minute
 
-**You:** Which products are disapproved, and what issues does Google report for each?
-
-**Assistant:** Lists the affected products and explains the item-level issues that Merchant Center reports.
-
-**You:** Show the current price and availability of product `SKU-123`, then prepare an availability update to `in_stock`.
-
-**Assistant:** Shows the current product input, the API data source it belongs to and the exact change to make. It asks for confirmation before updating the live product input.
-
-**You:** Confirm the update.
-
-**Assistant:** Sends the update and explains that Merchant Center processes product data asynchronously. The processed product and its quality status can take several minutes to refresh.
+> **You:** Which products are disapproved, and what issues does Google report for each?
+>
+> **Assistant:** Lists the affected products and explains the item-level issues that Merchant Center reports.
+>
+> **You:** Show the current price and availability of product `SKU-123`, then prepare an availability update to `in_stock`.
+>
+> **Assistant:** Shows the current product input, the API data source it belongs to and the exact change to make. It asks for confirmation before updating the live product input.
+>
+> **You:** Confirm the update.
+>
+> **Assistant:** Sends the update and explains that Merchant Center processes product data asynchronously. The processed product and its quality status can take several minutes to refresh.
 
 ## Contents
 
