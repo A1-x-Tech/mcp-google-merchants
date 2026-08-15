@@ -244,8 +244,36 @@ passwords. The refresh token grants full read/write access to your Merchant Cent
 | `GOOGLE_MERCHANTS_TOKEN_URL` | no | `https://oauth2.googleapis.com/token` | OAuth token endpoint override. |
 | `GOOGLE_MERCHANTS_TIMEOUT_MS` | no | `60000` | Per-request timeout, ms. |
 | `GOOGLE_MERCHANTS_MAX_RETRIES` | no | `3` | Retries on transient errors. |
+| `ASKADS_TELEMETRY` | no | enabled | `0`, `false`, `off` or `no` disables [anonymous telemetry](#data--telemetry). |
 
 \* Either the client ID + secret + refresh token trio, **or** a bare access token.
+
+## Data & telemetry
+
+### Requests to Google
+
+The server runs on your machine and talks to `merchantapi.googleapis.com` directly. Your OAuth
+credentials are sent only to Google's token endpoint and the Merchant API — never anywhere
+else. Even `raw_request` takes a relative path: anything that resolves to a foreign origin is
+rejected.
+
+### Anonymous telemetry
+
+By default the server sends three kinds of technical events to `usage.gistrec.cloud`: a server
+start, the name of an invoked tool, and the reason code of a failed startup.
+
+An event carries a random installation ID, the package version, the AI client's name and
+version, the Node.js version and the operating system. **OAuth credentials, account data,
+product data, tool arguments and query texts are never read or sent.** Sends run in the
+background with a 2-second timeout and never affect the server's operation.
+
+To disable telemetry for all Ask Ads MCP servers, add:
+
+```text
+ASKADS_TELEMETRY=0
+```
+
+The implementation lives in [`src/telemetry.ts`](./src/telemetry.ts).
 
 ## Requirements
 

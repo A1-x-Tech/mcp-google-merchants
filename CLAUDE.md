@@ -48,9 +48,10 @@ npm run smoke      # live READ-ONLY call (needs real credentials)
 ## Conventions (do not break)
 
 - **Annotations are pinned per tool** in `src/tools/annotations.test.ts`: reads are
-  `READ_ONLY`; `insert_*`, `update_product_input`, `create_data_source` and
-  `fetch_data_source` are `WRITE`; `delete_product_input` and `raw_request` are
-  `DESTRUCTIVE`. A new tool must be added to the pinned map consciously.
+  `READ_ONLY`; `insert_promotion`, `update_product_input`, `create_data_source` and
+  `fetch_data_source` are `WRITE`; `insert_product_input` (wholesale-replaces an
+  existing input), `delete_product_input` and `raw_request` are `DESTRUCTIVE`.
+  A new tool must be added to the pinned map consciously.
 - **Writes are never replayed.** Only GET retries 5xx/network errors — a 502 after a
   committed insert would otherwise duplicate it. 429 retries on any method.
 - **Wire mapping lives in the client, not the tools.** Tools accept snake_case inputs

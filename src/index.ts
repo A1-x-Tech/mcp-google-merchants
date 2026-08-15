@@ -34,7 +34,8 @@ const INSTRUCTIONS =
   "On 429 read list_method_quotas: quotas are per account and daily counters reset at 12:00 UTC, " +
   "not midnight. Empty price_competitiveness/price_insights rows usually mean no Market Insights " +
   "opt-in rather than no data, and list_product_issues does not cover advanced (parent) accounts. " +
-  "delete_product_input and raw_request change a live feed irreversibly.";
+  "delete_product_input and raw_request change a live feed irreversibly, and insert_product_input " +
+  "wholesale-overwrites any existing input with the same ID.";
 
 /** Reads the package version so the server reports its real version to MCP clients. */
 function readVersion(): string {

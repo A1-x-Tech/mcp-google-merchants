@@ -64,11 +64,11 @@ const EXPECTED: Record<string, Annotations> = {
   // writes
   create_data_source: WRITE,
   fetch_data_source: WRITE,
-  insert_product_input: WRITE,
   insert_promotion: WRITE,
   update_product_input: WRITE,
-  // destructive
+  // destructive (insert_product_input wholesale-replaces an existing input)
   delete_product_input: DESTRUCTIVE,
+  insert_product_input: DESTRUCTIVE,
   raw_request: DESTRUCTIVE,
 };
 
