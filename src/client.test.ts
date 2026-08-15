@@ -1,6 +1,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { MerchantsClient } from "./client.js";
+import { CredentialsError, MISSING_CREDENTIALS_MESSAGE } from "./config.js";
 import type { MerchantsConfig } from "./types.js";
 
 const BASE = "https://merchantapi.googleapis.com";
@@ -66,6 +67,45 @@ const okJson = (data: unknown = { ok: true }) =>
   new Response(JSON.stringify(data), { status: 200 });
 
 // --- Auth ---
+
+/**
+ * The degraded-start contract: a server without credentials still runs, so the
+ * client must fail the call itself — with the exact actionable message, before
+ * any fetch. Zero fetch calls proves the error skips the retry/backoff loop
+ * and the 401 re-mint alike (maxRetries is deliberately non-zero here).
+ */
+test("no credentials at all: CredentialsError with the exact text, fetch never called", async () => {
+  const mock = mockFetch(() => okJson());
+  try {
+    const client = new MerchantsClient({
+      apiBase: BASE,
+      tokenUrl: TOKEN_URL,
+      maxRetries: 3,
+      retryBaseMs: 0,
+    });
+    await assert.rejects(
+      () => client.listAccounts(),
+      (err: unknown) => {
+        assert.ok(err instanceof CredentialsError, "must be a CredentialsError");
+        assert.equal(err.message, MISSING_CREDENTIALS_MESSAGE);
+        // The historical startup error, verbatim — the message is the product.
+        assert.ok(
+          err.message.startsWith(
+            "Google Merchants credentials are required: either GOOGLE_MERCHANTS_CLIENT_ID + " +
+              "GOOGLE_MERCHANTS_CLIENT_SECRET + GOOGLE_MERCHANTS_REFRESH_TOKEN (OAuth refresh flow) " +
+              "or GOOGLE_MERCHANTS_ACCESS_TOKEN (pre-minted token, expires in ~1 hour).",
+          ),
+          "the message must open with the historical startup error, verbatim",
+        );
+        assert.match(err.message, /restart the server/, "the fix must mention the restart");
+        return true;
+      },
+    );
+    assert.equal(mock.calls.length, 0, "must not fetch at all — no retries, no token mint, no replay");
+  } finally {
+    mock.restore();
+  }
+});
 
 test("refresh flow: form-encoded exchange at the token endpoint, then Bearer on the API call", async () => {
   const mock = mockFetch((url) => {

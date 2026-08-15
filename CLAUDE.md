@@ -23,12 +23,15 @@ npm run smoke      # live READ-ONLY call (needs real credentials)
 
 ## Architecture
 
-- `src/config.ts` — env → config; throws `ConfigError` (with a `reason` code from the
-  closed vocabulary `missing_credentials` / `incomplete_oauth`) instead of exiting, so
-  `index.ts` can report the drop-off before dying. Requires the OAuth trio
-  (`GOOGLE_MERCHANTS_CLIENT_ID`/`_CLIENT_SECRET`/`_REFRESH_TOKEN`) or
+- `src/config.ts` — env → config. Credentials: the OAuth trio
+  (`GOOGLE_MERCHANTS_CLIENT_ID`/`_CLIENT_SECRET`/`_REFRESH_TOKEN` — all three or
+  `ConfigError` `incomplete_oauth`, whose message lists the missing variables) or
   `GOOGLE_MERCHANTS_ACCESS_TOKEN`; optional `GOOGLE_MERCHANTS_ACCOUNT_ID`, `_API_BASE`,
-  `_TOKEN_URL`, `_TIMEOUT_MS`, `_MAX_RETRIES`.
+  `_TOKEN_URL`, `_TIMEOUT_MS`, `_MAX_RETRIES`. No credentials at all is NOT an error:
+  the fields stay `undefined` (empty string = absent) and the server starts degraded.
+  Also home to `CredentialsError` / `MISSING_CREDENTIALS_MESSAGE` (opens with the
+  historical startup error verbatim, then names the variables and the restart) and
+  `hasCredentials()`.
 - `src/client.ts` — all HTTP and all wire mapping: token refresh (cached, shared across
   concurrent calls, one automatic retry on 401), `accountPath()` fallback to the
   configured default account, data-source name expansion, per-endpoint methods with
@@ -41,12 +44,34 @@ npm run smoke      # live READ-ONLY call (needs real credentials)
   `promotions`, `reports`, `issues`, `quota`) + `raw.ts` (`raw_request`, full method enum,
   DESTRUCTIVE annotations). `util.ts` — `ok`/`fail`, the `READ_ONLY`/`WRITE`/`DESTRUCTIVE`
   annotation constants and shared zod schema factories.
-- `src/index.ts` — wires every `register*` into the McpServer.
+- `src/index.ts` — wires every `register*` into the McpServer. `loadConfigOrDegraded()`
+  catches `ConfigError`, pings `startup_failed` (fire-and-forget) and degrades the config
+  to "no credentials"; an unconfigured start prepends `UNCONFIGURED_PREFIX` — plus
+  `Configuration problem: <message>` when a ConfigError was caught — to the initialize
+  `instructions`, and `oninitialized` sends `server_start` for a configured install or
+  `unconfigured_start` (with the reason) otherwise.
 - `src/telemetry.ts` — anonymous usage pings (ids/names/versions only, never data or
   arguments; fire-and-forget, must never block or throw; opt-out `ASKADS_TELEMETRY=0`).
+  `server_start` means "a usable install started"; `unconfigured_start` is a degraded
+  start and `startup_failed` a malformed config caught at load — both carry a `reason`
+  from a closed vocabulary (`missing_credentials`, `incomplete_oauth`) — never a
+  variable's name or value.
 
 ## Conventions (do not break)
 
+- **Never exit because of configuration.** A server that dies before the MCP handshake
+  leaves the user with a red cross and no reason — telemetry across this line of servers
+  showed that state accounted for nearly every unconfigured install, and almost none of
+  them recovered. Missing credentials are a survivable state: start, answer initialize
+  (with the unconfigured prefix in `instructions`) and tools/list, and let the first tool
+  call fail with `CredentialsError` — its message names the variables to set and says to
+  restart, because credentials come only from the environment. There are no login tools;
+  the fix is the operator setting the variables and restarting the server.
+  `config.test.ts`, `client.test.ts` and `test/dist-smoke.test.js` pin this.
+- **Credential failures are not transport failures.** `CredentialsError` is thrown in
+  `bearerToken()` before any fetch — before the retry/backoff loop and the 401 re-mint —
+  because retrying it burns seconds of backoff before the user sees the one message that
+  helps. Pinned by a "fetch must not be called" assertion in `client.test.ts`.
 - **Annotations are pinned per tool** in `src/tools/annotations.test.ts`: reads are
   `READ_ONLY`; `insert_promotion`, `update_product_input`, `create_data_source` and
   `fetch_data_source` are `WRITE`; `insert_product_input` (wholesale-replaces an
