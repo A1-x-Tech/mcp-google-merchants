@@ -244,7 +244,6 @@ passwords. The refresh token grants full read/write access to your Merchant Cent
 | `GOOGLE_MERCHANTS_TOKEN_URL` | no | `https://oauth2.googleapis.com/token` | OAuth token endpoint override. |
 | `GOOGLE_MERCHANTS_TIMEOUT_MS` | no | `60000` | Per-request timeout, ms. |
 | `GOOGLE_MERCHANTS_MAX_RETRIES` | no | `3` | Retries on transient errors. |
-| `ASKADS_TELEMETRY` | no | enabled | `0`, `false`, `off` or `no` disables [anonymous telemetry](#data--telemetry). |
 
 \* Either the client ID + secret + refresh token trio, **or** a bare access token.
 
