@@ -11,6 +11,11 @@
 
 It works with the Merchant Center data behind Shopping listings: products, data sources, promotions and reports. Campaigns, budgets and bids belong to Google Ads and are outside this server.
 
+- **22 tools.** 15 operations only read Merchant Center data; 5 write product, data-source or promotion data; 2 are potentially destructive.
+- **Your Google access.** The server uses your OAuth credentials and the Merchant API v1 — it does not create a separate Merchant Center account.
+- **Source-aware changes.** Product and promotion inputs can be changed only through an API data source. A file feed can be re-fetched, but its contents are not edited here.
+- **Visible boundaries.** Tools carry read-only, write or destructive metadata, so an AI client can distinguish an inspection from a live change.
+
 Start with a read-only question:
 
 > Which products are disapproved, and what issues does Google report for each?
