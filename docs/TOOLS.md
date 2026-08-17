@@ -1,5 +1,7 @@
 # Tools
 
+For task-oriented guidance, open the [MCP capability catalog](./capabilities/index.md). This page remains the technical reference for schemas and API responses.
+
 The server wraps the **Google Merchant API v1** (single host
 `merchantapi.googleapis.com`, per-sub-API path prefixes). Inputs are snake_case;
 the client maps them to the API's camelCase wire format, expands numeric
