@@ -1,3 +1,4 @@
+import { CredentialsError } from "./config.js";
 import type { MerchantsConfig } from "./types.js";
 import { MerchantsError } from "./types.js";
 
@@ -189,11 +190,16 @@ export class MerchantsClient {
   /**
    * Returns a Bearer token: the static GOOGLE_MERCHANTS_ACCESS_TOKEN when set,
    * else an access token minted from the refresh token and cached until ~1
-   * minute before expiry. Concurrent callers share one in-flight refresh; a
-   * failed refresh is not cached.
+   * minute before expiry. With neither configured, throws
+   * {@link CredentialsError} BEFORE any fetch — a missing setup must never
+   * enter the retry/backoff loop or trigger the 401 re-mint, because no amount
+   * of retrying mints credentials. Concurrent callers share one in-flight
+   * refresh; a failed refresh is not cached.
    */
   private async bearerToken(): Promise<string> {
     if (this.config.accessToken) return this.config.accessToken;
+    const { clientId, clientSecret, refreshToken } = this.config;
+    if (!clientId || !clientSecret || !refreshToken) throw new CredentialsError();
     if (this.token && Date.now() < this.token.expiresAt) return this.token.value;
     if (!this.tokenRefresh) {
       this.tokenRefresh = this.refreshAccessToken().finally(() => {

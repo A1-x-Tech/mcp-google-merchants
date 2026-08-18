@@ -9,6 +9,15 @@ and the project adheres to [Semantic Versioning](https://semver.org/).
 
 ### Changed
 
+- **The server no longer exits because of configuration.** Missing credentials are a
+  survivable state: the server starts, completes the MCP handshake, serves the full tool list
+  and opens the `initialize` instructions with the fix (which variables to set, and that the
+  server must be restarted afterwards — credentials are read from the environment only at
+  startup). The first tool call then fails with that same actionable message instead of the
+  client showing a dead server with no reason. A malformed setup (a partial OAuth trio)
+  still reports `incomplete_oauth` — its message still names exactly the missing variables —
+  but degrades the same way, carried into the instructions, instead of killing the process
+  before the handshake.
 - `insert_product_input` is now annotated **DESTRUCTIVE** (was WRITE): it wholesale-replaces an
   existing input with the same ID and moves the product when given a different data source. Hosts
   that gate destructive tools will now ask before it runs.
@@ -25,6 +34,9 @@ and the project adheres to [Semantic Versioning](https://semver.org/).
 
 ### Added
 
+- Telemetry event `unconfigured_start` (with the same closed reason vocabulary): a server
+  without credentials now survives to the MCP handshake, so a degraded start is counted
+  separately instead of inflating `server_start` or dying as `startup_failed`.
 - docs/TOOLS.md now lists `ASKADS_TELEMETRY` in the environment variables table, pointing to
   the telemetry description in docs/DEVELOPMENT.md.
 
