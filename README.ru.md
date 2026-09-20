@@ -53,10 +53,10 @@
 
 ## Быстрый старт
 
-Нужны Node.js 20+, аккаунт Google Merchant Center, OAuth-данные из Google Cloud и проект Google Cloud, зарегистрированный в Merchant Center. Как подготовить доступ, описано в разделе [«Как получить доступ»](#как-получить-доступ).
+Нужны Node.js 20+, аккаунт Google Merchant Center и проект Google Cloud, зарегистрированный в Merchant Center. OAuth-данные при установке не нужны: сервер подключается прямо в диалоге, см. [«Как получить доступ»](#как-получить-доступ).
 
-1. Подготовьте четыре значения: OAuth client ID, OAuth client secret, OAuth refresh token и ID аккаунта Merchant Center.
-2. Добавьте сервер в AI-приложение по одной из инструкций ниже.
+1. Добавьте сервер в AI-приложение по одной из инструкций ниже.
+2. Скажите «подключи Google Merchant Center» — ассистент проведёт через создание OAuth-клиента и согласие в браузере, без конфигов и перезапуска.
 3. Отправьте первый запрос, который только читает данные.
 
 <details open>
@@ -83,10 +83,6 @@
 
 ```bash
 codex mcp add google-merchants \
-  --env GOOGLE_MERCHANTS_CLIENT_ID=your_client_id \
-  --env GOOGLE_MERCHANTS_CLIENT_SECRET=your_client_secret \
-  --env GOOGLE_MERCHANTS_REFRESH_TOKEN=your_refresh_token \
-  --env GOOGLE_MERCHANTS_ACCOUNT_ID=your_merchant_id \
   -- npx -y mcp-google-merchants@latest
 ```
 
@@ -107,10 +103,6 @@ codex mcp list
 
 ```bash
 claude mcp add \
-  --env GOOGLE_MERCHANTS_CLIENT_ID=your_client_id \
-  --env GOOGLE_MERCHANTS_CLIENT_SECRET=your_client_secret \
-  --env GOOGLE_MERCHANTS_REFRESH_TOKEN=your_refresh_token \
-  --env GOOGLE_MERCHANTS_ACCOUNT_ID=your_merchant_id \
   --transport stdio \
   --scope user \
   google-merchants \
@@ -141,13 +133,7 @@ claude mcp list
   "mcpServers": {
     "google-merchants": {
       "command": "npx",
-      "args": ["-y", "mcp-google-merchants@latest"],
-      "env": {
-        "GOOGLE_MERCHANTS_CLIENT_ID": "your_client_id",
-        "GOOGLE_MERCHANTS_CLIENT_SECRET": "your_client_secret",
-        "GOOGLE_MERCHANTS_REFRESH_TOKEN": "your_refresh_token",
-        "GOOGLE_MERCHANTS_ACCOUNT_ID": "your_merchant_id"
-      }
+      "args": ["-y", "mcp-google-merchants@latest"]
     }
   }
 }
@@ -172,13 +158,7 @@ claude mcp list
     "google-merchants": {
       "type": "stdio",
       "command": "npx",
-      "args": ["-y", "mcp-google-merchants@latest"],
-      "env": {
-        "GOOGLE_MERCHANTS_CLIENT_ID": "your_client_id",
-        "GOOGLE_MERCHANTS_CLIENT_SECRET": "your_client_secret",
-        "GOOGLE_MERCHANTS_REFRESH_TOKEN": "your_refresh_token",
-        "GOOGLE_MERCHANTS_ACCOUNT_ID": "your_merchant_id"
-      }
+      "args": ["-y", "mcp-google-merchants@latest"]
     }
   }
 }
@@ -201,13 +181,7 @@ claude mcp list
     "google-merchants": {
       "type": "stdio",
       "command": "npx",
-      "args": ["-y", "mcp-google-merchants@latest"],
-      "env": {
-        "GOOGLE_MERCHANTS_CLIENT_ID": "${input:google_merchants_client_id}",
-        "GOOGLE_MERCHANTS_CLIENT_SECRET": "${input:google_merchants_client_secret}",
-        "GOOGLE_MERCHANTS_REFRESH_TOKEN": "${input:google_merchants_refresh_token}",
-        "GOOGLE_MERCHANTS_ACCOUNT_ID": "${input:google_merchants_account_id}"
-      }
+      "args": ["-y", "mcp-google-merchants@latest"]
     }
   },
   "inputs": [
@@ -303,7 +277,20 @@ Merchant Center хранит поступившие данные и итогов
 
 ## Как получить доступ
 
-Сервер использует [Google Merchant API](https://developers.google.com/merchant/api/overview) и OAuth scope `https://www.googleapis.com/auth/content`.
+Сервер использует [Google Merchant API](https://developers.google.com/merchant/api/overview) и OAuth-скоуп `https://www.googleapis.com/auth/content`. Способов передать доступ два, и первый не требует править конфигурационные файлы.
+
+### Подключение из диалога (рекомендуемый путь)
+
+Скажите «подключи Google Merchant Center», и ассистент пройдёт флоу вместе с вами:
+
+1. `setup_instructions` выдаёт чек-лист: создать или выбрать проект Google Cloud, включить **Merchant API**, настроить consent screen и создать OAuth-клиент типа **Desktop app**.
+2. Скачайте JSON этого клиента («Download JSON») и передайте ассистенту **путь** к файлу — `set_client` сохранит его с правами только для владельца. Секрет через переписку не проходит.
+3. `start_login` возвращает ссылку на согласие Google. Откройте её **на этой же машине** и подтвердите доступ: код возвращается на одноразовый слушатель `127.0.0.1` (PKCE), а не в чат.
+4. `finish_login` меняет код на токены, кладёт их в `~/.config/mcp-google-merchants/credentials.json` (права 0600) и проверяет реальным вызовом Merchant API — так незарегистрированный в Merchant Center проект ловится сразу.
+
+Токены перечитываются на каждый вызов, поэтому подключение действует немедленно — перезапускать AI-приложение не нужно. `auth_status` показывает состояние, `logout` отзывает токен и удаляет его. Регистрацию Cloud-проекта в Merchant Center это не отменяет: это шаг Merchant Center, а не OAuth.
+
+### Переменные окружения (CI и автоматические установки)
 
 1. Создайте или выберите **проект Google Cloud**, включите **Merchant API** и настройте OAuth consent screen.
 2. В Google Cloud создайте OAuth-клиент типа **Desktop app**. Сохраните его client ID и client secret.
@@ -319,11 +306,12 @@ Merchant Center хранит поступившие данные и итогов
 
 | Переменная | Обязательна | Описание |
 |---|---|---|
-| `GOOGLE_MERCHANTS_CLIENT_ID` | Да* | OAuth 2.0 client ID. |
-| `GOOGLE_MERCHANTS_CLIENT_SECRET` | Да* | OAuth 2.0 client secret. |
-| `GOOGLE_MERCHANTS_REFRESH_TOKEN` | Да* | OAuth refresh token с доступом Merchant API. |
-| `GOOGLE_MERCHANTS_ACCESS_TOKEN` | Да* | Короткоживущая альтернатива трём OAuth-переменным выше. |
+| `GOOGLE_MERCHANTS_CLIENT_ID` | Нет* | OAuth 2.0 client ID. |
+| `GOOGLE_MERCHANTS_CLIENT_SECRET` | Нет* | OAuth 2.0 client secret. |
+| `GOOGLE_MERCHANTS_REFRESH_TOKEN` | Нет* | OAuth refresh token с доступом Merchant API. |
+| `GOOGLE_MERCHANTS_ACCESS_TOKEN` | Нет* | Короткоживущая альтернатива трём OAuth-переменным выше. |
 | `GOOGLE_MERCHANTS_ACCOUNT_ID` | Нет | ID аккаунта Merchant Center по умолчанию. В конкретном запросе можно выбрать другой доступный аккаунт. |
+| `GOOGLE_MERCHANTS_OAUTH_PORT` | Нет | Фиксированный порт loopback-слушателя для входа из диалога; нужен при пробросе портов по SSH. |
 | `GOOGLE_MERCHANTS_API_BASE` | Нет | Переопределяет базовый URL Merchant API. |
 | `GOOGLE_MERCHANTS_TOKEN_URL` | Нет | Переопределяет OAuth token endpoint. |
 | `GOOGLE_MERCHANTS_TIMEOUT_MS` | Нет | Тайм-аут одного запроса в миллисекундах; по умолчанию `60000`. |

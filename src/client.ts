@@ -1,6 +1,19 @@
-import { CredentialsError } from "./config.js";
+import { CredentialsError, DEFAULT_BASE } from "./config.js";
 import type { MerchantsConfig } from "./types.js";
 import { MerchantsError } from "./types.js";
+
+/**
+ * The slice of the auth component's TokenProvider this client consumes
+ * (structurally satisfied by `TokenProvider` from @a1-x-tech/mcp-google-auth).
+ * Kept as a local interface so the client stays testable with a plain object
+ * and never depends on the component's internals.
+ */
+export interface AccessTokenProvider {
+  /** A valid Bearer token; `true` forces a re-mint (the 401 replay path). */
+  getAccessToken(forceRefresh?: boolean): Promise<string>;
+  /** True when a 401 replay is worth trying (a refresh token exists). */
+  canRefresh(): boolean;
+}
 
 export type HttpMethod = "GET" | "POST" | "PATCH" | "DELETE";
 
@@ -126,7 +139,16 @@ export class MerchantsClient {
   /** In-flight refresh, shared so concurrent requests refresh only once. */
   private tokenRefresh?: Promise<string>;
 
-  constructor(private readonly config: MerchantsConfig) {
+  constructor(
+    private readonly config: MerchantsConfig,
+    /**
+     * Fallback token source (the in-chat login of @a1-x-tech/mcp-google-auth).
+     * Consulted only when the env-derived config carries no credentials —
+     * env wins (component invariant 3), so existing refresh-triple and
+     * access-token installs behave exactly as before.
+     */
+    private readonly tokenProvider?: AccessTokenProvider,
+  ) {
     this.base = config.apiBase.endsWith("/") ? config.apiBase : config.apiBase + "/";
     this.timeoutMs = config.timeoutMs ?? 60_000;
     this.maxRetries = config.maxRetries ?? 3;
@@ -199,7 +221,20 @@ export class MerchantsClient {
   private async bearerToken(): Promise<string> {
     if (this.config.accessToken) return this.config.accessToken;
     const { clientId, clientSecret, refreshToken } = this.config;
-    if (!clientId || !clientSecret || !refreshToken) throw new CredentialsError();
+    if (!clientId || !clientSecret || !refreshToken) {
+      // The in-chat login, when wired: it re-reads the stored credentials per
+      // call, so a finish_login taken mid-session works without a restart, and
+      // it raises AuthRequiredError before any fetch.
+      if (this.tokenProvider) {
+        // One-shot: the flag is set by the 401 path and must not force a
+        // re-mint on every later call, which would burn a token request each
+        // time the provider is asked for a perfectly valid token.
+        const force = this.forcedRemint;
+        this.forcedRemint = false;
+        return this.tokenProvider.getAccessToken(force);
+      }
+      throw new CredentialsError();
+    }
     if (this.token && Date.now() < this.token.expiresAt) return this.token.value;
     if (!this.tokenRefresh) {
       this.tokenRefresh = this.refreshAccessToken().finally(() => {
@@ -209,9 +244,29 @@ export class MerchantsClient {
     return this.tokenRefresh;
   }
 
+  /** Set by the 401 path so the next provider-backed token request re-mints. */
+  private forcedRemint = false;
+
   /** Drops the cached access token (e.g. after an unexpected 401). */
   private invalidateToken(): void {
     this.token = undefined;
+  }
+
+  /** True when the environment itself can mint a token from a refresh triple. */
+  private canRefreshFromEnv(): boolean {
+    const { clientId, clientSecret, refreshToken } = this.config;
+    return Boolean(clientId && clientSecret && refreshToken);
+  }
+
+  /**
+   * Whether a 401 is worth one re-mint + replay: either the env config can mint
+   * from its refresh triple, or the provider holds a refresh token. A static env
+   * access token can never be re-minted, and that case is already excluded by
+   * the caller.
+   */
+  private canReplayOn401(): boolean {
+    if (this.canRefreshFromEnv()) return true;
+    return this.tokenProvider?.canRefresh() ?? false;
   }
 
   /** Exchanges the refresh token for a fresh access token at the OAuth token endpoint. */
@@ -326,9 +381,12 @@ export class MerchantsClient {
 
       // A cached token can be revoked or expire early; mint a new one and retry
       // once. Safe for writes too: a 401 request was rejected before processing.
-      if (res.status === 401 && !retried401 && !this.config.accessToken) {
+      if (res.status === 401 && !retried401 && !this.config.accessToken && this.canReplayOn401()) {
         retried401 = true;
         this.invalidateToken();
+        // A provider-backed token lives in the component's cache, not in this
+        // client's — tell the next bearerToken() call to force a re-mint.
+        this.forcedRemint = Boolean(this.tokenProvider) && !this.canRefreshFromEnv();
         continue;
       }
 
@@ -572,4 +630,28 @@ function compact<T extends Record<string, unknown>>(obj: T): T {
 
 function delay(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+/**
+ * One cheap Merchant API read, used to verify a fresh in-chat login against the
+ * API the server actually talks to. Standalone (not a client method) because it
+ * runs with a token the client does not hold yet — the login is still being
+ * finished. Throws MerchantsError exactly like the client does, so the caller
+ * can recognize a disabled-API 403 and give the actionable advice.
+ */
+export async function probeApi(accessToken: string): Promise<void> {
+  const base = (process.env.GOOGLE_MERCHANTS_API_BASE || DEFAULT_BASE).replace(/\/+$/, "");
+  const res = await fetch(`${base}/accounts/v1/accounts?pageSize=1`, {
+    headers: { Authorization: `Bearer ${accessToken}` },
+    signal: AbortSignal.timeout(10_000),
+  });
+  const text = await res.text();
+  if (res.ok) return;
+  let data: unknown;
+  try {
+    data = JSON.parse(text);
+  } catch {
+    data = text;
+  }
+  throw new MerchantsError(res.status, data);
 }

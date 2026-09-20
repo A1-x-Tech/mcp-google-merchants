@@ -53,10 +53,10 @@ Start with a read-only question:
 
 ## Quick start
 
-You need Node.js 20+, a Google Merchant Center account, OAuth credentials from Google Cloud and a Google Cloud project registered with Merchant Center. The access setup is described in [Getting access](#getting-access).
+You need Node.js 20+, a Google Merchant Center account and a Google Cloud project registered with Merchant Center. OAuth credentials are not required at install time — the server connects from the conversation, see [Getting access](#getting-access).
 
-1. Prepare the four values: OAuth client ID, OAuth client secret, OAuth refresh token and Merchant Center account ID.
-2. Add the server to your AI app using one of the instructions below.
+1. Add the server to your AI app using one of the instructions below.
+2. Say "connect Google Merchant Center": the assistant walks you through the OAuth client and the browser consent, no config files and no restart.
 3. Ask the first read-only question above.
 
 <details open>
@@ -83,10 +83,6 @@ You need Node.js 20+, a Google Merchant Center account, OAuth credentials from G
 
 ```bash
 codex mcp add google-merchants \
-  --env GOOGLE_MERCHANTS_CLIENT_ID=your_client_id \
-  --env GOOGLE_MERCHANTS_CLIENT_SECRET=your_client_secret \
-  --env GOOGLE_MERCHANTS_REFRESH_TOKEN=your_refresh_token \
-  --env GOOGLE_MERCHANTS_ACCOUNT_ID=your_merchant_id \
   -- npx -y mcp-google-merchants@latest
 ```
 
@@ -107,10 +103,6 @@ codex mcp list
 
 ```bash
 claude mcp add \
-  --env GOOGLE_MERCHANTS_CLIENT_ID=your_client_id \
-  --env GOOGLE_MERCHANTS_CLIENT_SECRET=your_client_secret \
-  --env GOOGLE_MERCHANTS_REFRESH_TOKEN=your_refresh_token \
-  --env GOOGLE_MERCHANTS_ACCOUNT_ID=your_merchant_id \
   --transport stdio \
   --scope user \
   google-merchants \
@@ -141,13 +133,7 @@ This repository currently publishes an npm stdio package and does not contain a 
   "mcpServers": {
     "google-merchants": {
       "command": "npx",
-      "args": ["-y", "mcp-google-merchants@latest"],
-      "env": {
-        "GOOGLE_MERCHANTS_CLIENT_ID": "your_client_id",
-        "GOOGLE_MERCHANTS_CLIENT_SECRET": "your_client_secret",
-        "GOOGLE_MERCHANTS_REFRESH_TOKEN": "your_refresh_token",
-        "GOOGLE_MERCHANTS_ACCOUNT_ID": "your_merchant_id"
-      }
+      "args": ["-y", "mcp-google-merchants@latest"]
     }
   }
 }
@@ -172,13 +158,7 @@ Add a user-level server to `~/.cursor/mcp.json` on macOS/Linux or `%USERPROFILE%
     "google-merchants": {
       "type": "stdio",
       "command": "npx",
-      "args": ["-y", "mcp-google-merchants@latest"],
-      "env": {
-        "GOOGLE_MERCHANTS_CLIENT_ID": "your_client_id",
-        "GOOGLE_MERCHANTS_CLIENT_SECRET": "your_client_secret",
-        "GOOGLE_MERCHANTS_REFRESH_TOKEN": "your_refresh_token",
-        "GOOGLE_MERCHANTS_ACCOUNT_ID": "your_merchant_id"
-      }
+      "args": ["-y", "mcp-google-merchants@latest"]
     }
   }
 }
@@ -201,13 +181,7 @@ Run **MCP: Open User Configuration** from the Command Palette and add:
     "google-merchants": {
       "type": "stdio",
       "command": "npx",
-      "args": ["-y", "mcp-google-merchants@latest"],
-      "env": {
-        "GOOGLE_MERCHANTS_CLIENT_ID": "${input:google_merchants_client_id}",
-        "GOOGLE_MERCHANTS_CLIENT_SECRET": "${input:google_merchants_client_secret}",
-        "GOOGLE_MERCHANTS_REFRESH_TOKEN": "${input:google_merchants_refresh_token}",
-        "GOOGLE_MERCHANTS_ACCOUNT_ID": "${input:google_merchants_account_id}"
-      }
+      "args": ["-y", "mcp-google-merchants@latest"]
     }
   },
   "inputs": [
@@ -303,7 +277,20 @@ The MCP client decides how it asks you to confirm write and destructive tools. T
 
 ## Getting access
 
-The server uses the [Google Merchant API](https://developers.google.com/merchant/api/overview) and the OAuth scope `https://www.googleapis.com/auth/content`.
+The server uses the [Google Merchant API](https://developers.google.com/merchant/api/overview) and the OAuth scope `https://www.googleapis.com/auth/content`. There are two ways to hand it credentials, and the first one needs no configuration files.
+
+### Connect from the chat (recommended)
+
+Say "connect Google Merchant Center" and the assistant runs the flow with you:
+
+1. `setup_instructions` prints the checklist: create or select a Google Cloud project, enable **Merchant API**, configure the consent screen and create a **Desktop app** OAuth client.
+2. Download that client's JSON ("Download JSON") and give the assistant its **path** — `set_client` stores it owner-only. The secret never goes through the conversation.
+3. `start_login` returns a Google consent link. Open it **on this machine** and approve; the code comes back to a one-shot listener on `127.0.0.1` (PKCE), never through the chat.
+4. `finish_login` exchanges the code, saves the tokens to `~/.config/mcp-google-merchants/credentials.json` (mode 0600) and verifies them with a real Merchant API call — so a project that is not registered with Merchant Center yet is caught right there.
+
+The tokens are re-read on every call, so the connection works immediately — no restart of the AI app. `auth_status` shows what is connected, `logout` revokes and deletes it. The Cloud-project registration below is still required: it is a Merchant Center step, not an OAuth one.
+
+### Environment variables (CI, unattended installs)
 
 1. Create or select a **Google Cloud project**, enable **Merchant API**, and configure the OAuth consent screen.
 2. In Google Cloud, create an OAuth client of type **Desktop app**. Save its client ID and client secret.
@@ -319,11 +306,12 @@ Treat the OAuth client secret and refresh token as passwords. They are kept in t
 
 | Variable | Required | Description |
 |---|---|---|
-| `GOOGLE_MERCHANTS_CLIENT_ID` | Yes* | OAuth 2.0 client ID. |
-| `GOOGLE_MERCHANTS_CLIENT_SECRET` | Yes* | OAuth 2.0 client secret. |
-| `GOOGLE_MERCHANTS_REFRESH_TOKEN` | Yes* | OAuth refresh token with the Merchant API scope. |
-| `GOOGLE_MERCHANTS_ACCESS_TOKEN` | Yes* | Short-lived access-token alternative to the three OAuth values above. |
+| `GOOGLE_MERCHANTS_CLIENT_ID` | No* | OAuth 2.0 client ID. |
+| `GOOGLE_MERCHANTS_CLIENT_SECRET` | No* | OAuth 2.0 client secret. |
+| `GOOGLE_MERCHANTS_REFRESH_TOKEN` | No* | OAuth refresh token with the Merchant API scope. |
+| `GOOGLE_MERCHANTS_ACCESS_TOKEN` | No* | Short-lived access-token alternative to the three OAuth values above. |
 | `GOOGLE_MERCHANTS_ACCOUNT_ID` | No | Default Merchant Center account ID. Individual requests can select another accessible account. |
+| `GOOGLE_MERCHANTS_OAUTH_PORT` | No | Fixed loopback port for the in-chat login; useful over SSH port forwarding. |
 | `GOOGLE_MERCHANTS_API_BASE` | No | Merchant API base URL override. |
 | `GOOGLE_MERCHANTS_TOKEN_URL` | No | OAuth token endpoint override. |
 | `GOOGLE_MERCHANTS_TIMEOUT_MS` | No | Per-request timeout in milliseconds; default is `60000`. |

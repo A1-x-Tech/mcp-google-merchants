@@ -8,13 +8,13 @@
     "url": "https://github.com/A1-x-Tech/mcp-google-merchants",
     "source": "github"
   },
-  "version": "1.1.0",
+  "version": "1.2.0",
   "packages": [
     {
       "registryType": "npm",
       "registryBaseUrl": "https://registry.npmjs.org",
       "identifier": "mcp-google-merchants",
-      "version": "1.1.0",
+      "version": "1.2.0",
       "transport": {
         "type": "stdio"
       },
@@ -39,7 +39,7 @@
         },
         {
           "name": "GOOGLE_MERCHANTS_ACCESS_TOKEN",
-          "description": "Pre-minted OAuth access token (~1h lifetime) — alternative to the refresh trio.",
+          "description": "Pre-minted OAuth access token (~1h lifetime) \u2014 alternative to the refresh trio.",
           "isRequired": false,
           "isSecret": true
         },
@@ -47,6 +47,12 @@
           "name": "GOOGLE_MERCHANTS_ACCOUNT_ID",
           "description": "Default Merchant Center account ID; tools can override it per call.",
           "isRequired": false
+        },
+        {
+          "name": "GOOGLE_MERCHANTS_OAUTH_PORT",
+          "description": "Fixed port for the loopback listener of the in-chat login (127.0.0.1 + PKCE). Set it when the client runs over SSH port forwarding; otherwise a free port is picked per login.",
+          "isRequired": false,
+          "isSecret": false
         },
         {
           "name": "GOOGLE_MERCHANTS_API_BASE",

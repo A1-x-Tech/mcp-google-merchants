@@ -1,7 +1,7 @@
 {
   "name": "mcp-google-merchants",
-  "version": "1.1.0",
-  "description": "MCP server for Google Merchant Center (Merchant API v1) — products, data sources, promotions, MCQL reports, price competitiveness and product issues for AI agents. OAuth with write support.",
+  "version": "1.2.0",
+  "description": "MCP server for Google Merchant Center (Merchant API v1) \u2014 products, data sources, promotions, MCQL reports, price competitiveness and product issues for AI agents. OAuth with write support.",
   "mcpName": "io.github.A1-x-Tech/mcp-google-merchants",
   "type": "module",
   "bin": {
@@ -49,6 +49,7 @@
     "url": "https://github.com/A1-x-Tech/mcp-google-merchants/issues"
   },
   "dependencies": {
+    "@a1-x-tech/mcp-google-auth": "^0.1.0",
     "@modelcontextprotocol/sdk": "^1.29.0",
     "zod": "^3.25.0"
   },

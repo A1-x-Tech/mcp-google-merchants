@@ -1,4 +1,7 @@
 import assert from "node:assert/strict";
+import { mkdtempSync, rmSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 import test from "node:test";
 import { fileURLToPath } from "node:url";
 
@@ -9,10 +12,17 @@ import { MerchantsClient } from "../dist/client.js";
 
 const DIST_ENTRY = fileURLToPath(new URL("../dist/index.js", import.meta.url));
 
+/**
+ * Sorted, because every assertion compares it against a sorted tool list. The
+ * six onboarding tools come from @a1-x-tech/mcp-google-auth, so this list is
+ * also the check that the component is wired into the published binary.
+ */
 const ALL_TOOLS = [
+  "auth_status",
   "create_data_source",
   "delete_product_input",
   "fetch_data_source",
+  "finish_login",
   "get_account",
   "get_data_source",
   "get_homepage",
@@ -27,14 +37,31 @@ const ALL_TOOLS = [
   "list_product_issues",
   "list_products",
   "list_promotions",
+  "logout",
   "price_competitiveness",
   "price_insights",
   "raw_request",
   "search_reports",
+  "set_client",
+  "setup_instructions",
+  "start_login",
   "update_product_input",
 ];
 
-test("dist binary completes a real MCP handshake over stdio and lists every tool", async () => {
+/**
+ * A throwaway $XDG_CONFIG_HOME for the spawned server. The auth component
+ * re-reads $XDG_CONFIG_HOME/mcp-google-merchants/credentials.json per call, so
+ * without this a real login on the developer's machine would make the
+ * "unconfigured" case pass for the wrong reason.
+ */
+function isolatedConfigDir(t) {
+  const dir = mkdtempSync(join(tmpdir(), "mcp-merchants-dist-smoke-"));
+  t.after(() => rmSync(dir, { recursive: true, force: true }));
+  return dir;
+}
+
+
+test("dist binary completes a real MCP handshake over stdio and lists every tool", async (t) => {
   const transport = new StdioClientTransport({
     command: process.execPath,
     args: [DIST_ENTRY],
@@ -42,6 +69,7 @@ test("dist binary completes a real MCP handshake over stdio and lists every tool
       ...getDefaultEnvironment(),
       GOOGLE_MERCHANTS_ACCESS_TOKEN: "test-token",
       GOOGLE_MERCHANTS_ACCOUNT_ID: "123",
+      XDG_CONFIG_HOME: isolatedConfigDir(t),
       ASKADS_TELEMETRY: "0",
     },
     stderr: "ignore",
@@ -77,13 +105,14 @@ test("dist binary completes a real MCP handshake over stdio and lists every tool
  * answer a tool call with the actionable error — offline: the CredentialsError
  * fires before any fetch, so this test never touches the network.
  */
-test("dist binary starts without credentials: handshake, tool list, actionable call error", async () => {
+test("dist binary starts without credentials: handshake, tool list, actionable call error", async (t) => {
   const env = Object.fromEntries(
     Object.entries(process.env).filter(
       ([key, value]) => value !== undefined && !key.startsWith("GOOGLE_MERCHANTS_"),
     ),
   );
   env.ASKADS_TELEMETRY = "0"; // keep the suite offline
+  env.XDG_CONFIG_HOME = isolatedConfigDir(t); // ignore any real login on this machine
   const transport = new StdioClientTransport({
     command: process.execPath,
     args: [DIST_ENTRY],
@@ -95,7 +124,8 @@ test("dist binary starts without credentials: handshake, tool list, actionable c
   try {
     // The model must read the fix before it picks a tool.
     const instructions = client.getInstructions() ?? "";
-    assert.match(instructions, /not connected/);
+    assert.match(instructions, /NOT CONNECTED/);
+    assert.match(instructions, /start_login/);
     assert.match(instructions, /GOOGLE_MERCHANTS_CLIENT_ID/);
     assert.match(instructions, /restart/);
 
@@ -106,7 +136,8 @@ test("dist binary starts without credentials: handshake, tool list, actionable c
     const result = await client.callTool({ name: "list_accounts", arguments: {} });
     assert.equal(result.isError, true);
     const text = result.content.map((c) => c.text ?? "").join(" ");
-    assert.match(text, /Google Merchants credentials are required: either GOOGLE_MERCHANTS_CLIENT_ID/);
+    assert.match(text, /not connected/i);
+    assert.match(text, /start_login/);
     assert.match(text, /restart the server/);
   } finally {
     await client.close();
