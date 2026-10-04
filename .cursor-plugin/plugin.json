@@ -1,0 +1,24 @@
+{
+  "name": "mcp-google-merchants",
+  "displayName": "A1 Google Merchant Center MCP",
+  "description": "MCP server for Google Merchant Center — diagnose disapproved products and manage product data, promotions and reports from an AI app",
+  "author": {
+    "name": "Aleksandr Kovalko & Zinnur Temerbekov"
+  },
+  "homepage": "https://github.com/A1-x-Tech/mcp-google-merchants#readme",
+  "repository": "https://github.com/A1-x-Tech/mcp-google-merchants",
+  "license": "MIT",
+  "keywords": [
+    "mcp",
+    "model-context-protocol",
+    "google",
+    "merchant-center",
+    "merchant-api",
+    "google-shopping",
+    "e-commerce",
+    "mcql",
+    "claude",
+    "cursor"
+  ],
+  "logo": "assets/a1-logo.svg"
+}

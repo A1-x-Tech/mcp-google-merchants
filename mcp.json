@@ -1,0 +1,12 @@
+{
+  "mcpServers": {
+    "google-merchants": {
+      "type": "stdio",
+      "command": "npx",
+      "args": [
+        "-y",
+        "mcp-google-merchants@latest"
+      ]
+    }
+  }
+}
