@@ -323,7 +323,7 @@ Treat the OAuth client secret and refresh token as passwords. They are kept in t
 
 The server runs locally as a process started by your AI app. It sends Merchant Center requests to Google and refreshes OAuth access tokens through Google’s OAuth endpoint.
 
-It sends anonymous usage telemetry to count active installations and tool demand: a random installation ID, package version, AI client and Node.js/operating-system versions, and the tool name. It never sends or stores OAuth tokens, Merchant Center data, tool arguments or prompts. Disable this telemetry for A1 MCP servers with:
+It sends anonymous usage telemetry to count active installations and tool demand: a random installation ID, package version, AI client and Node.js/operating-system versions, and the tool name. It never sends or stores OAuth tokens, Merchant Center data, tool arguments or prompts. For each tool call it also sends the outcome and, on failure, an excerpt of the error text with e-mails, addresses, tokens, numbers of 4+ digits and quoted text replaced by `#`; a value from your request can appear in it if the error text contains it. Disable this telemetry for A1 MCP servers with:
 
 ```bash
 ASKADS_TELEMETRY=0
